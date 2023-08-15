@@ -1,6 +1,13 @@
 #include <stdint.h>
 #include <stdio.h>
+
+struct ll {
+    uint16_t data;
+    struct ll *next;
+};
+
 #define NUM_POSTS 40
+#define NUM_WOODS 2
 int main() {
     uint16_t posts[] = {
         60,  // 1
@@ -44,6 +51,12 @@ int main() {
         137, // 39
         137, // 40
     };
-    uint16_t woods[] = [243, 304];
-    https://github.com/barrust/set
+    uint16_t woods[] = {243, 304};
+    ll *combos = NULL;
+    for (int i = 0; i < NUM_WOODS; i++) {
+        enumerate_combos(&combos, 0, woods[i], posts, woods[i]);
+}
+
+void enumerate_combos() {
+for (int i = 0; i < NUM_POSTS; i++) {
 }
