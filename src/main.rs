@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::LinkedList;
 use std::rc::Rc;
 fn main() {
     //vector:
@@ -85,7 +85,7 @@ fn main() {
         137, // 40
     ];
     let woods = vec![243, 304]; // TODO only like 14 243s and 30 304s
-    let mut combos: HashMap<Combo, u32> = HashMap::new(); // (bitfield of which posts, wood used) :: leftover
+    let mut combos: HashMap<Combo, u32> = LinkedList::new(); // (bitfield of which posts, wood used) :: leftover
     for wood in woods {
         enumerate_combos(&mut combos, 0, wood, &posts, wood);
     }
@@ -95,7 +95,7 @@ fn main() {
     }
     println!("{} combos", combos.len());
     println!("{} posts", posts.len());
-    let cuts = cut_all(0, &combos, &posts, Combos::Root, 0);
+    let cuts = cut_all(0, &combos, &posts, Combos::Root, 0, 50);
     println!("{:?}", cuts);
     println!("{} cuts", cuts.len());
 }
@@ -112,7 +112,7 @@ struct Cutset {
 }
 
 fn enumerate_combos(
-    combos: &mut HashMap<Combo, u32>,
+    combos: &mut LinkedList<Combo>,
     bitfield: u64,
     leftover: u32,
     posts: &Vec<u32>,
@@ -128,29 +128,27 @@ fn enumerate_combos(
         enumerate_combos(combos, new_bitfield, new_leftover, &new_posts, wood);
     }
     if bitfield != 0 {
-        combos.insert(
-            Combo {
-                posts: bitfield,
-                wood,
-            },
-            leftover,
-        );
+        combos.push_back(Combo {
+            posts: bitfield,
+            wood,
+        });
     }
 }
 
 // create a singly linked list
 #[derive(Debug)]
 enum Combos {
-    Leaf(Combo, Rc<Combos>),
+    Leaf(Combo, Rc<Combos>, u32),
     Root,
 }
 
 fn cut_all(
     bitfield: u64,
-    combos: &HashMap<Combo, u32>,
+    combos: &LinkedList<Combo>,
     posts: &Vec<u32>,
     comboset: Combos,
     depth: u32,
+    mut minimum_combos: u32,
 ) -> Vec<Cutset> {
     if depth > 50 {
         panic!("too deep")
@@ -158,26 +156,31 @@ fn cut_all(
     //println!("depth {} bitfield: {:#043b}", depth, bitfield);
     let mut cuts: Vec<Cutset> = Vec::new();
     let comboset2 = Rc::new(comboset);
-    for (combo, leftover) in combos.iter() {
+    for (i, combo) in combos.iter().enumerate() {
+        if depth <= 4 {
+            println!("advanced:) depth: {}", depth);
+        }
         if (combo.posts & bitfield) != 0 {
             // already did that post
             continue;
         }
         let new_comboset = Combos::Leaf(combo.clone(), comboset2.clone());
+        let mut new_combos = combos.clone();
         if (combo.posts | bitfield) == 0b11111_11111_11111_11111__11111_11111_11111_11111 {
-            println!("found!");
             cuts.push(Cutset {
                 combos: new_comboset,
             });
         } else {
             //println!("not skiiped &: {} posts: {}", combo.posts & bitfield, combo.posts);
+            new_combos.remove(combo);
             cuts.append(&mut cut_all(
                 bitfield | combo.posts,
-                combos,
+                new_combos,
                 posts,
                 new_comboset,
                 depth + 1,
-            ))
+            ));
+            new_combos.push_back(combo);
         }
     }
     cuts
